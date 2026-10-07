@@ -15,6 +15,8 @@ require_once __DIR__ . '/lib/Schema.php';
 require_once __DIR__ . '/lib/Validator.php';
 require_once __DIR__ . '/lib/Repository.php';
 require_once __DIR__ . '/lib/RequestService.php';
+require_once __DIR__ . '/lib/View.php';
+require_once __DIR__ . '/lib/AdminController.php';
 
 function nsmanager_config()
 {
@@ -52,6 +54,13 @@ function nsmanager_upgrade($vars)
 
 function nsmanager_output($vars)
 {
-    // Admin dashboard arrives in Phase 3.
-    echo '<p>Nameserver Manager is installed. The dashboard arrives in Phase 3.</p>';
+    $actor = !empty($_SESSION['adminid']) ? 'admin:' . (int) $_SESSION['adminid'] : 'system';
+    $isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+
+    try {
+        echo NsManager\AdminController::handle($vars, $_GET, $_POST, $actor, $isPost);
+    } catch (\Throwable $e) {
+        logActivity('Nameserver Manager error: ' . $e->getMessage());
+        echo '<div class="alert alert-danger">Nameserver Manager hit an error. Details were written to the Activity Log.</div>';
+    }
 }

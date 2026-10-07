@@ -16,11 +16,19 @@ $capsule->addConnection(['driver' => 'sqlite', 'database' => ':memory:', 'prefix
 $capsule->setAsGlobal();
 class_alias(IlluminateCapsule::class, 'WHMCS\Database\Capsule');
 
-// WHMCS owns tbldomains; fake the columns we read.
+// WHMCS owns tbldomains/tblclients; fake the columns we read.
 WHMCS\Database\Capsule::schema()->create('tbldomains', function ($t) {
     $t->increments('id');
     $t->unsignedInteger('userid');
     $t->string('domain');
+    $t->string('registrar')->nullable();
+    $t->string('status')->nullable();
+});
+WHMCS\Database\Capsule::schema()->create('tblclients', function ($t) {
+    $t->increments('id');
+    $t->string('firstname')->nullable();
+    $t->string('lastname')->nullable();
+    $t->string('companyname')->nullable();
 });
 
 $failures = 0;

@@ -103,6 +103,44 @@ class Repository
     }
 
     /**
+     * Requests joined with client name and provider info, newest first.
+     *
+     * @return object[]
+     */
+    public static function listRequestsDetailed(?string $status = null, int $limit = 25, int $offset = 0): array
+    {
+        $query = Capsule::table(Schema::REQUESTS . ' as r')
+            ->leftJoin('tblclients as c', 'c.id', '=', 'r.client_id')
+            ->leftJoin(Schema::DOMAINS . ' as d', 'd.domain_id', '=', 'r.domain_id')
+            ->select('r.*', 'c.firstname', 'c.lastname', 'c.companyname', 'd.provider', 'd.provider_login_url', 'd.account_label');
+        if ($status !== null) {
+            $query->where('r.status', $status);
+        }
+        return $query->orderBy('r.id', 'desc')->offset($offset)->limit($limit)->get()->all();
+    }
+
+    public static function countRequests(?string $status = null): int
+    {
+        $query = Capsule::table(Schema::REQUESTS);
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+        return (int) $query->count();
+    }
+
+    /**
+     * @return object[]
+     */
+    public static function getRequestsByDomain(int $domainId): array
+    {
+        return Capsule::table(Schema::REQUESTS)
+            ->where('domain_id', $domainId)
+            ->orderBy('id', 'desc')
+            ->get()
+            ->all();
+    }
+
+    /**
      * @return array<string, int> status => count
      */
     public static function countByStatus(): array
@@ -178,6 +216,68 @@ class Repository
     public static function setAppliedNs(int $domainId, array $ns): void
     {
         self::upsertDomainMeta($domainId, ['applied_ns' => self::encodeNs($ns)]);
+    }
+
+    // ---- admin listings -------------------------------------------------
+
+    /**
+     * Domains using the manualreg registrar, with client and provider info.
+     *
+     * @return object[]
+     */
+    public static function listManualDomains(?string $search = null, int $limit = 25, int $offset = 0): array
+    {
+        $pendingSql = '(SELECT COUNT(*) FROM ' . Schema::REQUESTS
+            . " q WHERE q.domain_id = t.id AND q.status = 'pending') AS pending_count";
+
+        return self::manualDomainsQuery($search)
+            ->select('t.id as domain_id', 't.domain', 't.userid', 'c.firstname', 'c.lastname', 'c.companyname',
+                'd.provider', 'd.provider_login_url', 'd.account_label', 'd.applied_ns')
+            ->selectRaw($pendingSql)
+            ->orderBy('t.domain')
+            ->offset($offset)
+            ->limit($limit)
+            ->get()
+            ->all();
+    }
+
+    public static function countManualDomains(?string $search = null): int
+    {
+        return (int) self::manualDomainsQuery($search)->count();
+    }
+
+    /**
+     * @return \Illuminate\Database\Query\Builder
+     */
+    private static function manualDomainsQuery(?string $search)
+    {
+        $query = Capsule::table('tbldomains as t')
+            ->leftJoin('tblclients as c', 'c.id', '=', 't.userid')
+            ->leftJoin(Schema::DOMAINS . ' as d', 'd.domain_id', '=', 't.id')
+            ->where('t.registrar', 'manualreg');
+        if ($search !== null && $search !== '') {
+            $like = '%' . addcslashes($search, '%_\\') . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('t.domain', 'like', $like)->orWhere('d.provider', 'like', $like);
+            });
+        }
+        return $query;
+    }
+
+    public static function getClientName(int $clientId): string
+    {
+        $c = Capsule::table('tblclients')->where('id', $clientId)->first(['firstname', 'lastname', 'companyname']);
+        return $c ? self::formatClientName($c) : 'Client #' . $clientId;
+    }
+
+    public static function formatClientName(object $row): string
+    {
+        $name = trim(($row->firstname ?? '') . ' ' . ($row->lastname ?? ''));
+        $company = trim((string) ($row->companyname ?? ''));
+        if ($name !== '' && $company !== '') {
+            return $name . ' (' . $company . ')';
+        }
+        return $name !== '' ? $name : $company;
     }
 
     // ---- audit log -----------------------------------------------------

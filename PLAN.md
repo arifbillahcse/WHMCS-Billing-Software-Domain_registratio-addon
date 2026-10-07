@@ -57,7 +57,7 @@ waiting, never `failed`.
 - Notification channels (all toggleable in addon settings): admin email, ticket,
   Telegram, Slack
 - Auto-verify via `dns_get_record($domain, DNS_NS)` in the daily cron: included
-- Open: should `failed` revert the displayed NS to the old values? (decide in Phase 3)
+- Decided (Phase 3): `failed` shows the customer the live (applied) nameservers again, since no request is pending any more; the failure reason is stored in `admin_note`
 - To verify against WHMCS 9.x docs before use: client-area banner hook and template
   variable names, `localAPI` parameters, addon permission checks, CSRF handling
 
