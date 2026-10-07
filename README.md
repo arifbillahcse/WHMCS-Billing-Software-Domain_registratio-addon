@@ -173,12 +173,25 @@ Data is never deleted when you deactivate the addon.
 
 | Symptom | Check |
 |---|---|
-| Customer sees "temporarily unavailable" | Is the addon activated? Details are in *Module Log* (module `manualreg`) |
+| Red "An issue was encountered while retrieving / updating the domain nameservers" on the client's Nameservers tab | WHMCS shows its own generic text and hides the module's message. Read the real reason in **Utilities -> Logs -> Activity Log** (line starting `Manual Registrar ...`); see the table below |
+| Customer sees "temporarily unavailable" | Same as above: the addon is not activated or its files are incomplete. Details are in the *Activity Log* and *Module Log* (module `manualreg`) |
 | No admin emails | The staff role must receive *system* emails; try the Notifications test button |
 | Telegram/Slack test fails | Token/webhook correct? Server can reach the host? See *Activity Log* |
 | "Update pending" notice never appears | Needs the `ClientAreaFooterOutput` hook and the `clientareadomaindetails` template; custom themes may differ |
 | Requests never auto-close | Cron running? Auto-verify enabled? The server's resolver may hold stale DNS |
 | Dashboard buttons do nothing / "invalid token" | Check the addon is opened through `addonmodules.php?module=nsmanager` |
+
+**What the Activity Log line means**
+
+| Log message contains | Cause and fix |
+|---|---|
+| `Nameserver Manager addon is not activated` | The addon tables do not exist. Activate **Nameserver Manager** under System Settings -> Addon Modules (install step 2), then reload the client page |
+| `Nameserver Manager addon files not found` | `modules/addons/nsmanager/` was not uploaded completely (the `lib/` folder is required by the registrar). Re-upload it |
+| `Base table or view not found` / `Unknown column` | Activation did not finish, or you upgraded without opening Addon Modules. Open System Settings -> Addon Modules once; if it persists, deactivate and activate the addon (data is kept) |
+| Anything else | Copy the whole line (it includes the file and line number) and report it |
+
+Also check that the domain's **Registrar** is **Manual Registrar** and that **Utilities -> Logs -> Module Log** is
+enabled if you want the full trace of each call.
 
 ---
 
@@ -210,7 +223,7 @@ The tests run the classes against SQLite outside WHMCS:
 
 ```bash
 cd tests && composer install
-for t in smoke registrar admin notifier phase5 review; do php ${t}_test.php; done
+for t in smoke registrar admin notifier phase5 review isolation; do php ${t}_test.php; done
 ```
 
 They do not replace testing inside WHMCS. See [PLAN.md](PLAN.md) for the design and review notes.
