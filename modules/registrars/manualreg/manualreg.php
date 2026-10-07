@@ -163,11 +163,20 @@ function manualreg_ip()
 
 /**
  * Log the real error for admins; show the customer a generic one.
+ *
+ * WHMCS replaces any module error with its own generic message in the client
+ * area, so the reason is also written to the Activity Log (always on, unlike
+ * Module Log) where an admin can read it.
  */
 function manualreg_fail($action, $params, \Throwable $e)
 {
     if (function_exists('logModuleCall')) {
         logModuleCall('manualreg', $action, ['domainid' => $params['domainid'] ?? null], $e->getMessage(), $e->getTraceAsString());
+    }
+    if (function_exists('logActivity')) {
+        logActivity('Manual Registrar ' . $action . ' failed for domain ID ' . (int) ($params['domainid'] ?? 0)
+            . ': ' . get_class($e) . ': ' . mb_substr($e->getMessage(), 0, 300)
+            . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')');
     }
     return ['error' => 'Nameserver changes are temporarily unavailable. Please contact support.'];
 }
