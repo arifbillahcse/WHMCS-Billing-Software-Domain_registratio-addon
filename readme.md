@@ -21,4 +21,19 @@ See [PLAN.md](PLAN.md) for the design and build phases.
 
 ## Status
 
-Phases 0-3 done (skeleton; addon activation, tables, services; manualreg registrar module; admin dashboard). Dev smoke test: `cd tests && composer install && php smoke_test.php && php registrar_test.php && php admin_test.php`. See PLAN.md for the roadmap.
+Phases 0-4 done (skeleton; addon activation, tables, services; manualreg registrar module; admin dashboard; notifications). Dev smoke test: `cd tests && composer install && php smoke_test.php && php registrar_test.php && php admin_test.php && php notifier_test.php`. See PLAN.md for the roadmap.
+
+## Notifications (Phase 4)
+
+Configure under System Settings > Addon Modules > Nameserver Manager > Configure,
+then use the **Notifications** tab in the addon to send a test message.
+
+- **Admin alerts** (when a customer or the system queues a request; requests made by an
+  admin are not announced): admin email, an internal support ticket (not linked to the
+  customer), Telegram, Slack.
+- **Customer emails** when a request is marked applied or failed (the failure reason you
+  enter is included).
+- A failing channel never blocks a customer's save; failures appear in the domain's audit
+  history as `notify_failed` and in the Activity Log.
+- Admin email uses WHMCS `SendAdminEmail` (type `system`), so it reaches staff whose role
+  receives system emails.

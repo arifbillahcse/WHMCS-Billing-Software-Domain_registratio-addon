@@ -6,6 +6,7 @@ $tabs = [
     'failed' => 'Failed',
     'all' => 'All',
     'providers' => 'Providers',
+    'settings' => 'Notifications',
 ];
 $pendingCount = (int) ($counts['pending'] ?? 0);
 ?>

@@ -124,7 +124,7 @@ function manualreg_load()
     }
 
     $libDir = (defined('ROOTDIR') ? ROOTDIR : dirname(__DIR__, 3)) . '/modules/addons/nsmanager/lib';
-    foreach (['Schema', 'Validator', 'Repository', 'RequestService'] as $class) {
+    foreach (['Schema', 'Validator', 'View', 'Settings', 'Repository', 'Notifier', 'RequestService'] as $class) {
         $file = $libDir . '/' . $class . '.php';
         if (!is_file($file)) {
             throw new \RuntimeException('Nameserver Manager addon files not found.');

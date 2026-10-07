@@ -14,7 +14,7 @@ if (!defined('WHMCS')) {
 class AdminController
 {
     public const PER_PAGE = 25;
-    private const TABS = ['pending', 'applied', 'failed', 'all', 'providers'];
+    private const TABS = ['pending', 'applied', 'failed', 'all', 'providers', 'settings'];
 
     /**
      * @param array<string, mixed> $vars   WHMCS addon vars (modulelink, ...)
@@ -25,6 +25,7 @@ class AdminController
     {
         $base = (string) ($vars['modulelink'] ?? 'addonmodules.php?module=nsmanager');
         $flash = $isPost ? self::handlePost($post, $actor) : [];
+        $testResults = isset($post['test_notify']) ? Notifier::sendTest() : null;
 
         $tab = in_array($get['tab'] ?? '', self::TABS, true) ? $get['tab'] : 'pending';
         $page = max(1, (int) ($get['page'] ?? 1));
@@ -35,6 +36,8 @@ class AdminController
         if (($get['action'] ?? '') === 'domain') {
             $body = self::domainPage((int) ($get['id'] ?? 0), $common);
             $tab = '';
+        } elseif ($tab === 'settings') {
+            $body = View::render('settings', $common + ['status' => Notifier::status(), 'results' => $testResults]);
         } elseif ($tab === 'providers') {
             $body = self::providersPage((string) ($get['q'] ?? ''), $page, $common);
         } else {

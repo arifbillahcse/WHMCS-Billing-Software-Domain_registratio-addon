@@ -14,8 +14,10 @@ if (!defined('WHMCS')) {
 require_once __DIR__ . '/lib/Schema.php';
 require_once __DIR__ . '/lib/Validator.php';
 require_once __DIR__ . '/lib/Repository.php';
-require_once __DIR__ . '/lib/RequestService.php';
 require_once __DIR__ . '/lib/View.php';
+require_once __DIR__ . '/lib/Settings.php';
+require_once __DIR__ . '/lib/Notifier.php';
+require_once __DIR__ . '/lib/RequestService.php';
 require_once __DIR__ . '/lib/AdminController.php';
 
 function nsmanager_config()
@@ -26,7 +28,70 @@ function nsmanager_config()
         'version' => '0.1.0',
         'author' => 'Hostorio',
         'language' => 'english',
-        'fields' => [],
+        'fields' => [
+            'notify_admin_email' => [
+                'FriendlyName' => 'Email admins',
+                'Type' => 'yesno',
+                'Description' => 'Email staff when a customer requests a nameserver change (uses each staff role\'s "system emails" setting).',
+                'Default' => 'on',
+            ],
+            'notify_ticket' => [
+                'FriendlyName' => 'Open a support ticket',
+                'Type' => 'yesno',
+                'Description' => 'Open an internal ticket for each new request (not linked to the customer).',
+            ],
+            'ticket_dept_id' => [
+                'FriendlyName' => 'Ticket department ID',
+                'Type' => 'text',
+                'Size' => '6',
+                'Description' => 'Numeric ID of the support department that receives the tickets.',
+            ],
+            'ticket_priority' => [
+                'FriendlyName' => 'Ticket priority',
+                'Type' => 'dropdown',
+                'Options' => 'Low,Medium,High',
+                'Default' => 'Medium',
+            ],
+            'notify_telegram' => [
+                'FriendlyName' => 'Telegram alerts',
+                'Type' => 'yesno',
+                'Description' => 'Send new requests to a Telegram chat.',
+            ],
+            'telegram_bot_token' => [
+                'FriendlyName' => 'Telegram bot token',
+                'Type' => 'password',
+                'Size' => '50',
+                'Description' => 'From @BotFather, like 123456:ABC-DEF...',
+            ],
+            'telegram_chat_id' => [
+                'FriendlyName' => 'Telegram chat ID',
+                'Type' => 'text',
+                'Size' => '20',
+                'Description' => 'User, group or channel ID the bot may post to.',
+            ],
+            'notify_slack' => [
+                'FriendlyName' => 'Slack alerts',
+                'Type' => 'yesno',
+                'Description' => 'Send new requests to a Slack channel.',
+            ],
+            'slack_webhook_url' => [
+                'FriendlyName' => 'Slack webhook URL',
+                'Type' => 'password',
+                'Size' => '60',
+                'Description' => 'Incoming webhook, starts with https://hooks.slack.com/',
+            ],
+            'notify_customer_applied' => [
+                'FriendlyName' => 'Email customer when applied',
+                'Type' => 'yesno',
+                'Default' => 'on',
+            ],
+            'notify_customer_failed' => [
+                'FriendlyName' => 'Email customer when failed',
+                'Type' => 'yesno',
+                'Description' => 'The failure reason you enter is included in this email.',
+                'Default' => 'on',
+            ],
+        ],
     ];
 }
 

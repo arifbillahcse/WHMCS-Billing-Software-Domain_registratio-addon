@@ -14,7 +14,8 @@ if (!defined('WHMCS')) {
  *
  * Actors are plain strings: "client:<id>", "admin:<id>" or "system".
  * Every public method returns an array with at least 'success' (bool) and,
- * on failure, 'error' (string). Notifications are added in Phase 4.
+ * on failure, 'error' (string). Notifications are sent after the transaction
+ * has committed and never affect the result.
  */
 class RequestService
 {
@@ -23,6 +24,9 @@ class RequestService
     public const STATUS_FAILED = 'failed';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_SUPERSEDED = 'superseded';
+
+    /** Tests can switch notifications off. */
+    public static $notify = true;
 
     public const STATUSES = [
         self::STATUS_PENDING,
@@ -53,7 +57,7 @@ class RequestService
             return self::error('Domain not found.');
         }
 
-        return Capsule::connection()->transaction(function () use ($domain, $domainId, $new, $actor, $ip) {
+        $result = Capsule::connection()->transaction(function () use ($domain, $domainId, $new, $actor, $ip) {
             $applied = Repository::getAppliedNs($domainId);
             $pending = Repository::findPendingByDomain($domainId);
 
@@ -95,6 +99,11 @@ class RequestService
 
             return ['success' => true, 'noop' => false, 'request_id' => $requestId, 'superseded_id' => $supersededId];
         });
+
+        if (self::$notify && $result['success'] && !$result['noop']) {
+            Notifier::requestCreated((int) $result['request_id'], $result['superseded_id']);
+        }
+        return $result;
     }
 
     /**
@@ -104,7 +113,7 @@ class RequestService
      */
     public static function markApplied(int $requestId, string $actor, ?string $note = null): array
     {
-        return Capsule::connection()->transaction(function () use ($requestId, $actor, $note) {
+        $result = Capsule::connection()->transaction(function () use ($requestId, $actor, $note) {
             $request = self::loadPending($requestId);
             if (is_array($request)) {
                 return $request;
@@ -116,6 +125,8 @@ class RequestService
 
             return ['success' => true, 'request_id' => $requestId];
         });
+
+        return self::notifyResolved($result);
     }
 
     /**
@@ -130,7 +141,7 @@ class RequestService
             return self::error('A reason is required when marking a request as failed.');
         }
 
-        return Capsule::connection()->transaction(function () use ($requestId, $actor, $reason) {
+        $result = Capsule::connection()->transaction(function () use ($requestId, $actor, $reason) {
             $request = self::loadPending($requestId);
             if (is_array($request)) {
                 return $request;
@@ -141,6 +152,8 @@ class RequestService
 
             return ['success' => true, 'request_id' => $requestId];
         });
+
+        return self::notifyResolved($result);
     }
 
     /**
@@ -178,6 +191,18 @@ class RequestService
     }
 
     // ---- internals -----------------------------------------------------
+
+    /**
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>
+     */
+    private static function notifyResolved(array $result): array
+    {
+        if (self::$notify && $result['success']) {
+            Notifier::requestResolved((int) $result['request_id']);
+        }
+        return $result;
+    }
 
     /**
      * @return object|array<string, mixed> The pending request row, or an error result.

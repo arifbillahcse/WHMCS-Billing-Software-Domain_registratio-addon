@@ -31,6 +31,42 @@ WHMCS\Database\Capsule::schema()->create('tblclients', function ($t) {
     $t->string('companyname')->nullable();
 });
 
+WHMCS\Database\Capsule::schema()->create('tbladdonmodules', function ($t) {
+    $t->increments('id');
+    $t->string('module');
+    $t->string('setting');
+    $t->text('value')->nullable();
+});
+WHMCS\Database\Capsule::schema()->create('tblconfiguration', function ($t) {
+    $t->increments('id');
+    $t->string('setting');
+    $t->text('value')->nullable();
+});
+WHMCS\Database\Capsule::table('tblconfiguration')->insert([
+    ['setting' => 'SystemURL', 'value' => 'https://billing.example.com/'],
+    ['setting' => 'SystemEmailsFromEmail', 'value' => 'noreply@example.com'],
+]);
+
+// WHMCS global functions the addon calls. Calls are recorded for assertions;
+// set $GLOBALS['__api_result'] to simulate a failing local API.
+$GLOBALS['__api_calls'] = [];
+$GLOBALS['__api_result'] = ['result' => 'success'];
+$GLOBALS['__activity'] = [];
+function localAPI($command, $values = [])
+{
+    $GLOBALS['__api_calls'][] = [$command, $values];
+    return $GLOBALS['__api_result'];
+}
+function logActivity($message)
+{
+    $GLOBALS['__activity'][] = $message;
+}
+// Stand-in for WHMCS decrypt(): only strings prefixed "enc:" decrypt.
+function decrypt($value)
+{
+    return strpos($value, 'enc:') === 0 ? substr($value, 4) : '';
+}
+
 $failures = 0;
 function check(string $name, bool $cond): void
 {
