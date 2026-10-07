@@ -59,7 +59,8 @@ $isPending = $tab === 'pending';
                     <?php endif; ?>
                     <div class="ns-block">
                         <?php foreach ($item['new'] as $ns): ?>
-                            <code class="<?= in_array($ns, $item['old'], true) ? '' : 'ns-new' ?>"><?= $e($ns) ?></code><br>
+                            <code class="<?= in_array($ns, $item['old'], true) ? '' : 'ns-new' ?>"><?= $e($ns) ?></code>
+                            <?php if (in_array($ns, $item['glue'], true)): ?><span class="label label-warning" title="Create this child nameserver (glue record) at the provider first">glue</span><?php endif; ?><br>
                         <?php endforeach; ?>
                     </div>
                     <button type="button" class="btn btn-default btn-xs" data-copy="<?= $e(implode("\n", $item['new'])) ?>"

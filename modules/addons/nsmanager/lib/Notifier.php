@@ -53,6 +53,38 @@ class Notifier
     }
 
     /**
+     * Daily digest of requests that have been pending too long.
+     *
+     * @param object[] $requests pending request rows, oldest first
+     * @return int number of channels that delivered it (0 = nothing was sent)
+     */
+    public static function sendReminderDigest(array $requests, int $hours): int
+    {
+        if (!$requests) {
+            return 0;
+        }
+        try {
+            $lines = [count($requests) . ' nameserver change request(s) pending for more than ' . $hours . 'h:'];
+            foreach (array_slice($requests, 0, 25) as $r) {
+                $meta = Repository::getDomainMeta((int) $r->domain_id);
+                $lines[] = '#' . (int) $r->id . ' ' . $r->domain . ' - waiting ' . View::ageText($r->created_at)
+                    . ($meta && $meta->provider ? ' - ' . $meta->provider : '');
+            }
+            if (count($requests) > 25) {
+                $lines[] = '...and ' . (count($requests) - 25) . ' more.';
+            }
+            $link = self::adminUrl();
+            if ($link !== '') {
+                $lines[] = 'Open the queue: ' . $link;
+            }
+            return self::sendToAdmins('[NS change] ' . count($requests) . ' request(s) still pending', self::clean(implode("\n", $lines), 4000), null);
+        } catch (\Throwable $e) {
+            self::logFailure(null, null, 'reminder', $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * A request was applied or failed: tell the customer (if enabled).
      */
     public static function requestResolved(int $requestId): void
@@ -182,18 +214,24 @@ class Notifier
         ];
     }
 
-    private static function sendToAdmins(string $subject, string $text, object $request): void
+    /**
+     * @return int number of channels that delivered the message
+     */
+    private static function sendToAdmins(string $subject, string $text, ?object $request): int
     {
+        $sent = 0;
         foreach (self::channels() as $name => $channel) {
             if (!$channel['enabled']) {
                 continue;
             }
             try {
                 $channel['send']($subject, $text, $request);
+                $sent++;
             } catch (\Throwable $e) {
-                self::logFailure((int) $request->domain_id, (int) $request->id, $name, $e->getMessage());
+                self::logFailure($request ? (int) $request->domain_id : null, $request ? (int) $request->id : null, $name, $e->getMessage());
             }
         }
+        return $sent;
     }
 
     private static function emailCustomer(object $request, string $subject, string $body): void
@@ -233,6 +271,10 @@ class Notifier
             'Old nameservers: ' . ($old ? implode(', ', $old) : 'unknown'),
             'New nameservers: ' . implode(', ', Repository::decodeNs($request->new_ns)),
         ];
+        $glue = Validator::glueHosts((string) $request->domain, Repository::decodeNs($request->new_ns));
+        if ($glue) {
+            $lines[] = 'WARNING: ' . implode(', ', $glue) . ' sit under the domain itself - create the child nameserver (glue) records at the provider first.';
+        }
         if ($supersededId) {
             $lines[] = 'Replaces earlier pending request #' . $supersededId . '.';
         }
@@ -276,7 +318,7 @@ class Notifier
         return mb_substr($text, 0, $max);
     }
 
-    private static function adminUrl(): string
+    public static function adminUrl(): string
     {
         $base = self::configValue('SystemURL');
         if ($base === '' || View::safeUrl($base) === '') {

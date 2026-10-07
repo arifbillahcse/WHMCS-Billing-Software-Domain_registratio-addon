@@ -46,7 +46,7 @@ class Repository
     {
         $row = Capsule::table('tbldomains')
             ->where('id', $domainId)
-            ->first(['id', 'userid', 'domain']);
+            ->first(['id', 'userid', 'domain', 'registrar']);
         return $row ?: null;
     }
 
@@ -172,6 +172,46 @@ class Repository
             ->orderBy('id')
             ->get()
             ->all();
+    }
+
+    /**
+     * Pending requests whose live DNS has not been checked since the cutoff.
+     *
+     * @return object[]
+     */
+    public static function pendingNeedingCheck(string $cutoff, int $limit): array
+    {
+        return Capsule::table(Schema::REQUESTS)
+            ->where('status', RequestService::STATUS_PENDING)
+            ->where(function ($q) use ($cutoff) {
+                $q->whereNull('last_checked_at')->orWhere('last_checked_at', '<=', $cutoff);
+            })
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->all();
+    }
+
+    /**
+     * @param int[] $ids
+     */
+    public static function markReminded(array $ids): void
+    {
+        if ($ids) {
+            Capsule::table(Schema::REQUESTS)->whereIn('id', $ids)->update(['last_reminded_at' => self::now()]);
+        }
+    }
+
+    /**
+     * Requests a customer made for a domain since a timestamp (any status).
+     */
+    public static function countRecentClientRequests(int $domainId, string $since): int
+    {
+        return (int) Capsule::table(Schema::REQUESTS)
+            ->where('domain_id', $domainId)
+            ->where('requested_by', 'like', 'client:%')
+            ->where('created_at', '>=', $since)
+            ->count();
     }
 
     // ---- per-domain metadata ------------------------------------------

@@ -28,6 +28,9 @@ class Settings
         'slack_webhook_url' => '',
         'notify_customer_applied' => 'on',
         'notify_customer_failed' => 'on',
+        'auto_verify_dns' => 'on',
+        'reminder_hours' => '24',
+        'rate_limit_per_hour' => '5',
     ];
 
     /** @var array<string, string>|null */

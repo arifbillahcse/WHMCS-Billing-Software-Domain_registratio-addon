@@ -71,6 +71,7 @@ class AdminController
                 'client' => Repository::formatClientName($row),
                 'old' => Repository::decodeNs($row->old_ns),
                 'new' => Repository::decodeNs($row->new_ns),
+                'glue' => Validator::glueHosts((string) $row->domain, Repository::decodeNs($row->new_ns)),
                 'link' => View::safeUrl($row->provider_login_url),
             ];
         }

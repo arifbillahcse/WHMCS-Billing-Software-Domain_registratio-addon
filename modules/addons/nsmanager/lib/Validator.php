@@ -79,6 +79,22 @@ class Validator
     }
 
     /**
+     * Nameservers that live under the domain itself (ns1.example.com for
+     * example.com). The registrar needs a glue record for these.
+     *
+     * @param string[] $ns
+     * @return string[]
+     */
+    public static function glueHosts(string $domain, array $ns): array
+    {
+        $domain = strtolower(rtrim(trim($domain), '.'));
+        return array_values(array_filter($ns, static function ($host) use ($domain) {
+            $host = strtolower($host);
+            return $host === $domain || substr($host, -strlen($domain) - 1) === '.' . $domain;
+        }));
+    }
+
+    /**
      * @param string[] $ns
      * @return array{ok: bool, ns: string[], error: string}
      */

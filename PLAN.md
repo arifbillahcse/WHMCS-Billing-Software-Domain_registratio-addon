@@ -70,3 +70,7 @@ waiting, never `failed`.
 | 3 | Admin dashboard: tabs, apply/fail/cancel, bulk apply, provider tab, domain history | resolve a request from admin; audit shows it |
 | 4 | Notifier drivers, settings, customer email template | customer change fires channels; Mark applied emails customer |
 | 5 | Daily reminder digest, client banner, DNS auto-verify, rate limit, glue warning, escaping, docs | 24h reminder fires; request auto-closes after provider update |
+
+All phases implemented. Hooks used: `AfterCronJob` (DNS verify), `DailyCronJob` (reminders),
+`ClientAreaFooterOutput` (banner). These names and the `clientareadomaindetails` template name
+are from memory of the WHMCS developer docs and still need confirming on a 9.6 install.

@@ -75,6 +75,12 @@ class RequestService
                 return ['success' => true, 'noop' => true, 'request_id' => null, 'superseded_id' => (int) $pending->id];
             }
 
+            $limit = (int) Settings::get('rate_limit_per_hour');
+            if ($limit > 0 && strpos($actor, 'client:') === 0
+                && Repository::countRecentClientRequests($domainId, date('Y-m-d H:i:s', time() - 3600)) >= $limit) {
+                return self::error('Too many nameserver change requests for this domain. Please try again in an hour or contact support.');
+            }
+
             $supersededId = null;
             if ($pending) {
                 self::closePending($pending, self::STATUS_SUPERSEDED, $actor, 'Replaced by a newer request.');

@@ -37,6 +37,8 @@ WHMCS\Database\Capsule::schema()->create('tbladdonmodules', function ($t) {
     $t->string('setting');
     $t->text('value')->nullable();
 });
+// Most tests create many requests for one domain, so start with the rate limit off.
+WHMCS\Database\Capsule::table('tbladdonmodules')->insert(['module' => 'nsmanager', 'setting' => 'rate_limit_per_hour', 'value' => '0']);
 WHMCS\Database\Capsule::schema()->create('tblconfiguration', function ($t) {
     $t->increments('id');
     $t->string('setting');

@@ -18,6 +18,9 @@ require_once __DIR__ . '/lib/View.php';
 require_once __DIR__ . '/lib/Settings.php';
 require_once __DIR__ . '/lib/Notifier.php';
 require_once __DIR__ . '/lib/RequestService.php';
+require_once __DIR__ . '/lib/DnsVerifier.php';
+require_once __DIR__ . '/lib/Cron.php';
+require_once __DIR__ . '/lib/ClientBanner.php';
 require_once __DIR__ . '/lib/AdminController.php';
 
 function nsmanager_config()
@@ -25,7 +28,7 @@ function nsmanager_config()
     return [
         'name' => 'Nameserver Manager',
         'description' => 'Queue and track customer nameserver changes for domains held at external providers.',
-        'version' => '0.1.0',
+        'version' => '0.2.0',
         'author' => 'Hostorio',
         'language' => 'english',
         'fields' => [
@@ -79,6 +82,26 @@ function nsmanager_config()
                 'Type' => 'password',
                 'Size' => '60',
                 'Description' => 'Incoming webhook, starts with https://hooks.slack.com/',
+            ],
+            'auto_verify_dns' => [
+                'FriendlyName' => 'Auto-verify via DNS',
+                'Type' => 'yesno',
+                'Description' => 'Every cron run, close pending requests automatically once the live nameservers match.',
+                'Default' => 'on',
+            ],
+            'reminder_hours' => [
+                'FriendlyName' => 'Reminder after (hours)',
+                'Type' => 'text',
+                'Size' => '4',
+                'Description' => 'Daily digest for requests pending longer than this. Default 24.',
+                'Default' => '24',
+            ],
+            'rate_limit_per_hour' => [
+                'FriendlyName' => 'Customer change limit per domain per hour',
+                'Type' => 'text',
+                'Size' => '4',
+                'Description' => 'Stops abuse. 0 = unlimited. Default 5.',
+                'Default' => '5',
             ],
             'notify_customer_applied' => [
                 'FriendlyName' => 'Email customer when applied',

@@ -36,8 +36,16 @@ class Schema
                 $table->string('resolved_by', 64)->nullable();
                 $table->timestamp('resolved_at')->nullable();
                 $table->timestamp('last_reminded_at')->nullable();
+                $table->timestamp('last_checked_at')->nullable();
                 $table->timestamp('created_at')->nullable();
                 $table->timestamp('updated_at')->nullable();
+            });
+        }
+
+        // Added in 0.2.0 (DNS auto-verify throttle); installs from 0.1.0 get it here on upgrade.
+        if (!$schema->hasColumn(self::REQUESTS, 'last_checked_at')) {
+            $schema->table(self::REQUESTS, function ($table) {
+                $table->timestamp('last_checked_at')->nullable();
             });
         }
 
