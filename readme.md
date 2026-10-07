@@ -21,4 +21,4 @@ See [PLAN.md](PLAN.md) for the design and build phases.
 
 ## Status
 
-Phases 0-1 done (skeleton; addon activation, tables, services). Dev smoke test: `cd tests && composer install && php smoke_test.php`. See PLAN.md for the roadmap.
+Phases 0-2 done (skeleton; addon activation, tables, services; manualreg registrar module). Dev smoke test: `cd tests && composer install && php smoke_test.php && php registrar_test.php`. See PLAN.md for the roadmap.

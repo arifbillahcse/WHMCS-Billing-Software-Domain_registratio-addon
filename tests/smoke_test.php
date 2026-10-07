@@ -6,40 +6,14 @@
  *   cd tests && composer install && php smoke_test.php
  */
 
-require __DIR__ . '/vendor/autoload.php';
-
-use Illuminate\Database\Capsule\Manager as IlluminateCapsule;
-
-define('WHMCS', true);
-
-$capsule = new IlluminateCapsule();
-$capsule->addConnection(['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']);
-$capsule->setAsGlobal();
-class_alias(IlluminateCapsule::class, 'WHMCS\Database\Capsule');
-
-require __DIR__ . '/../modules/addons/nsmanager/nsmanager.php';
+require __DIR__ . '/bootstrap.php';
+require ROOTDIR . '/modules/addons/nsmanager/nsmanager.php';
 
 use NsManager\Repository;
 use NsManager\RequestService as RS;
 use NsManager\Validator;
 use WHMCS\Database\Capsule;
 
-$failures = 0;
-function check(string $name, bool $cond): void
-{
-    global $failures;
-    echo ($cond ? '  ok   ' : '  FAIL ') . $name . PHP_EOL;
-    if (!$cond) {
-        $failures++;
-    }
-}
-
-// WHMCS owns tbldomains; fake the columns we read.
-Capsule::schema()->create('tbldomains', function ($t) {
-    $t->increments('id');
-    $t->unsignedInteger('userid');
-    $t->string('domain');
-});
 Capsule::table('tbldomains')->insert(['id' => 1, 'userid' => 7, 'domain' => 'example.com']);
 
 echo "activate\n";
@@ -131,5 +105,4 @@ echo "upgrade / deactivate\n";
 nsmanager_upgrade([]);
 check('deactivate keeps data', nsmanager_deactivate()['status'] === 'success' && Capsule::schema()->hasTable('mod_nsmanager_requests'));
 
-echo PHP_EOL . ($failures === 0 ? 'ALL PASSED' : "$failures FAILED") . PHP_EOL;
-exit($failures === 0 ? 0 : 1);
+finish();
