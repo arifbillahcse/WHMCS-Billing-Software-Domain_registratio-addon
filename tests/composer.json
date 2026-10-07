@@ -1,0 +1,6 @@
+{
+    "description": "Dev-only harness: runs the addon classes against SQLite outside WHMCS.",
+    "require-dev": {
+        "illuminate/database": "^10.0"
+    }
+}
