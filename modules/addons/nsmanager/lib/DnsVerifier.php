@@ -31,6 +31,12 @@ class DnsVerifier
             return null;
         }
 
+        // Unicode domains must be looked up in their punycode form.
+        if (!preg_match('/^[\x00-\x7F]+$/', $domain) && function_exists('idn_to_ascii')) {
+            $ascii = idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+            $domain = $ascii !== false ? $ascii : $domain;
+        }
+
         $records = @dns_get_record($domain, DNS_NS);
         if (!is_array($records) || !$records) {
             return null;

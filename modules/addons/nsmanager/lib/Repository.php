@@ -64,10 +64,25 @@ class Repository
         ]);
     }
 
-    public static function findRequest(int $id): ?object
+    /**
+     * @param bool $lock take a row lock; only meaningful inside a transaction
+     */
+    public static function findRequest(int $id, bool $lock = false): ?object
     {
-        $row = Capsule::table(Schema::REQUESTS)->where('id', $id)->first();
+        $query = Capsule::table(Schema::REQUESTS)->where('id', $id);
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+        $row = $query->first();
         return $row ?: null;
+    }
+
+    /**
+     * Serialise concurrent changes to one domain (inside a transaction).
+     */
+    public static function lockDomain(int $domainId): void
+    {
+        Capsule::table('tbldomains')->where('id', $domainId)->lockForUpdate()->first(['id']);
     }
 
     public static function findPendingByDomain(int $domainId): ?object
@@ -188,6 +203,24 @@ class Repository
             })
             ->orderBy('id')
             ->limit($limit)
+            ->get()
+            ->all();
+    }
+
+    /**
+     * Pending requests whose domain no longer exists or no longer uses manualreg.
+     *
+     * @return object[]
+     */
+    public static function pendingOrphans(): array
+    {
+        return Capsule::table(Schema::REQUESTS . ' as r')
+            ->leftJoin('tbldomains as t', 't.id', '=', 'r.domain_id')
+            ->where('r.status', RequestService::STATUS_PENDING)
+            ->where(function ($q) {
+                $q->whereNull('t.id')->orWhereNull('t.registrar')->orWhere('t.registrar', '<>', 'manualreg');
+            })
+            ->select('r.*')
             ->get()
             ->all();
     }

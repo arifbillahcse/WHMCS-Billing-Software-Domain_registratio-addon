@@ -58,6 +58,9 @@ class RequestService
         }
 
         $result = Capsule::connection()->transaction(function () use ($domain, $domainId, $new, $actor, $ip) {
+            // Two simultaneous saves must not both create a pending request.
+            Repository::lockDomain($domainId);
+
             $applied = Repository::getAppliedNs($domainId);
             $pending = Repository::findPendingByDomain($domainId);
 
@@ -75,7 +78,7 @@ class RequestService
                 return ['success' => true, 'noop' => true, 'request_id' => null, 'superseded_id' => (int) $pending->id];
             }
 
-            $limit = (int) Settings::get('rate_limit_per_hour');
+            $limit = Settings::int('rate_limit_per_hour');
             if ($limit > 0 && strpos($actor, 'client:') === 0
                 && Repository::countRecentClientRequests($domainId, date('Y-m-d H:i:s', time() - 3600)) >= $limit) {
                 return self::error('Too many nameserver change requests for this domain. Please try again in an hour or contact support.');
@@ -215,7 +218,7 @@ class RequestService
      */
     private static function loadPending(int $requestId)
     {
-        $request = Repository::findRequest($requestId);
+        $request = Repository::findRequest($requestId, true);
         if (!$request) {
             return self::error('Request not found.');
         }

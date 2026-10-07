@@ -15,14 +15,34 @@ class Cron
     public const MAX_CHECKS_PER_RUN = 50;
 
     /**
+     * Cancel pending requests nobody can act on any more, so they stop appearing
+     * in the queue and reminders.
+     */
+    public static function cancelOrphans(): int
+    {
+        $cancelled = 0;
+        try {
+            foreach (Repository::pendingOrphans() as $request) {
+                $result = RequestService::cancel((int) $request->id, 'system', 'Domain was removed or no longer uses the Manual Registrar.');
+                $cancelled += $result['success'] ? 1 : 0;
+            }
+        } catch (\Throwable $e) {
+            self::log('orphan cleanup', $e);
+        }
+        return $cancelled;
+    }
+
+    /**
      * Send one digest for requests pending longer than the reminder window.
      *
      * @return array{overdue: int, sent: bool}
      */
     public static function sendReminders(): array
     {
+        self::cancelOrphans();
+
         try {
-            $hours = (int) Settings::get('reminder_hours');
+            $hours = Settings::int('reminder_hours');
             $hours = $hours > 0 ? $hours : 24;
             $cutoff = date('Y-m-d H:i:s', time() - $hours * 3600);
 

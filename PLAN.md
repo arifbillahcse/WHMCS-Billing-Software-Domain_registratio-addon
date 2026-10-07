@@ -74,3 +74,12 @@ waiting, never `failed`.
 All phases implemented. Hooks used: `AfterCronJob` (DNS verify), `DailyCronJob` (reminders),
 `ClientAreaFooterOutput` (banner). These names and the `clientareadomaindetails` template name
 are from memory of the WHMCS developer docs and still need confirming on a 9.6 install.
+
+## Review log
+Full review after Phase 5: PHPStan level 6 clean (apart from untyped WHMCS-style signatures);
+schema and queries compiled with Laravel's MySQL grammar; fixes made: row locks so two
+simultaneous saves cannot create two pending requests, blank numeric settings fall back to
+their defaults, orphaned pending requests are cancelled, IDN domains are punycoded before
+DNS lookups, language file added. Not verifiable without a WHMCS 9.6 install: hook and
+template names, `generate_token`, `SendAdminEmail`/`OpenTicket`/`SendEmail` parameters,
+password-field encryption, admin theme CSS. See docs/TESTING.md.

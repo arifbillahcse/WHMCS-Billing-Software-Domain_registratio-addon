@@ -57,6 +57,18 @@ class Settings
         return trim(self::$cache[$key] ?? self::DEFAULTS[$key] ?? '');
     }
 
+    /**
+     * Numeric setting; blank or non-numeric falls back to the default, never below 0.
+     */
+    public static function int(string $key): int
+    {
+        $value = self::get($key);
+        if ($value === '' || !is_numeric($value)) {
+            $value = self::DEFAULTS[$key] ?? '0';
+        }
+        return max(0, (int) $value);
+    }
+
     public static function bool(string $key): bool
     {
         return in_array(strtolower(self::get($key)), ['on', '1', 'yes', 'true'], true);

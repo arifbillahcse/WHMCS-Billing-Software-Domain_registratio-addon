@@ -57,6 +57,9 @@ Until then the cron hooks stay idle on purpose. Data is never dropped on deactiv
    and shown on their domain page for 7 days. The customer's displayed nameservers go back
    to the live ones.
 
+Pending requests whose domain was deleted or switched to another registrar are cancelled by
+the daily cron so they do not linger or trigger reminders.
+
 Rules: one open request per domain (a newer one supersedes the older); resubmitting the
 same nameservers does nothing; changing back to the live ones withdraws the open request.
 A DNS mismatch only means "keep waiting" and never marks a request failed. Requests an
@@ -82,6 +85,8 @@ admin makes are queued but not announced to admins.
 - A ticket opened for a request is not auto-closed when the request is applied.
 - Child nameservers (`ns1.yourdomain.com` on `yourdomain.com`) are allowed but flagged
   "glue": create the child nameserver at the provider first.
+- A domain registered through a WHMCS order starts with unknown live nameservers; enter them
+  on the domain's page in the dashboard (Providers > Edit) so "old" values are accurate.
 - English only.
 
 ## Development
@@ -90,7 +95,7 @@ Dev-only tests run the classes against SQLite outside WHMCS (stubbing WHMCS func
 
 ```
 cd tests && composer install
-for t in smoke registrar admin notifier phase5; do php ${t}_test.php; done
+for t in smoke registrar admin notifier phase5 review; do php ${t}_test.php; done
 ```
 
 They do not replace testing inside WHMCS. See [PLAN.md](PLAN.md) for the design.
